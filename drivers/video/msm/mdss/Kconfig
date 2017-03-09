@@ -31,6 +31,20 @@ config FB_MSM_MDSS_SPI_PANEL
 	current max fps only reach to 27 fps, and limited by MDP hardware
 	architecture only supply on MDP3
 
+config FB_MSM_MDSS_HDMI_MHL_SII6400
+	depends on FB_MSM_MDSS_HDMI_PANEL && QPNP_MHL
+	bool 'MHL/WiHD SII6400 support '
+	default n
+	---help---
+	  Support the HDMI to MHL/WiHD conversion.
+
+config FB_MSM_MDSS_HDMI_DP_ANX7816
+	tristate "Analogix Slimport transmitter COLORADO3 support"
+	default n
+	---help---
+	  Slimport Transmitter is a HD video transmitter chip
+	  over micro-USB connector for smartphone device.
+
 config FB_MSM_MDSS_MHL3
 	depends on FB_MSM_MDSS_HDMI_PANEL
 	bool "MHL3 SII8620 Support"
@@ -83,10 +97,10 @@ config FB_MSM_MDSS_FRC_DEBUG
 	statistics and check whether its output pattern matches expected
 	cadence.
 
-config FB_MSM_MDSS_KCAL_CTRL
+config FB_MSM_MDSS_STATIC_MBL
 	depends on FB_MSM_MDSS
-	bool "MDSS color control"
-	default n
+	bool "Set max brightness level to 255 unconditionally"
+	default y
 	---help---
-	  Enable sysfs for rgb/lut control for mdss-mdp display controllers
-	  in the MDSS sub-system.
+	This configuration will bypass device tree defined max brightness level
+	setting. Instead, this will set 255 as value regardless the original value.
