@@ -252,7 +252,7 @@ static struct fg_mem_setting settings[FG_MEM_SETTING_MAX] = {
 	SETTING(IRQ_VOLT_EMPTY,	 0x458,   3,      3100),
 	SETTING(CUTOFF_VOLTAGE,	 0x40C,   0,      3400),
 	SETTING(VBAT_EST_DIFF,	 0x000,   0,      30),
-	SETTING(DELTA_SOC,	 0x450,   3,      2),
+	SETTING(DELTA_SOC,	 0x450,   3,      1),
 	SETTING(BATT_LOW,	 0x458,   0,      4200),
 	SETTING(THERM_DELAY,	 0x4AC,   3,      0),
 };
@@ -2260,7 +2260,7 @@ static int get_prop_capacity(struct fg_chip *chip)
 		if (chip->last_soc == FULL_SOC_RAW)
 			return FULL_CAPACITY;
 		return DIV_ROUND_CLOSEST((chip->last_soc - 1) *
-				(FULL_CAPACITY - 1),
+				(FULL_CAPACITY - 2),
 				FULL_SOC_RAW - 2) + 1;
 	}
 
@@ -2288,7 +2288,7 @@ static int get_prop_capacity(struct fg_chip *chip)
 
 			if (!vbatt_low_sts)
 				return DIV_ROUND_CLOSEST((chip->last_soc - 1) *
-						(FULL_CAPACITY - 1),
+						(FULL_CAPACITY - 2),
 						FULL_SOC_RAW - 2) + 1;
 			else
 				return EMPTY_CAPACITY;
@@ -2299,7 +2299,7 @@ static int get_prop_capacity(struct fg_chip *chip)
 		return FULL_CAPACITY;
 	}
 
-	return DIV_ROUND_CLOSEST((msoc - 1) * (FULL_CAPACITY - 1),
+	return DIV_ROUND_CLOSEST((msoc - 1) * (FULL_CAPACITY - 2),
 			FULL_SOC_RAW - 2) + 1;
 }
 
@@ -8094,7 +8094,6 @@ static int fg_common_hw_init(struct fg_chip *chip)
 	int rc;
 	int resume_soc_raw;
 	u8 val;
-	u8 buf[2];
 
 	update_iterm(chip);
 	update_cutoff_voltage(chip);
@@ -8239,23 +8238,6 @@ static int fg_common_hw_init(struct fg_chip *chip)
 		return rc;
 	}
 
-	/*
-	 * At the end of this function set cut off SOC Ki coefficient from 32 to 96,
-	 * 0x408 offset 0 and 1 to 0xAA00
-	 */
-	buf[0] = 0x00;
-	buf[1] = 0xAA;
-	rc = fg_mem_write(chip, buf, 0x408, 2, 0, 1);
-	if (rc < 0)
-		pr_err("Error in configuring Sram cut off soc thread, rc=%d\n", rc);
-
-	/* Modify cut off current to 200mA. */
-	buf[0] = 0x1F;
-	buf[1] = 0x5;
-	rc = fg_mem_write(chip, buf, 0x410, 2, 0, 1);
-	if (rc < 0)
-		pr_err("Error in configuring Sram cut off current thread, rc=%d\n", rc);
-
 	return 0;
 }
 
@@ -8376,7 +8358,6 @@ static int fg_hw_init(struct fg_chip *chip)
 		chip->wa_flag |= PULSE_REQUEST_WA;
 		break;
 	case PMI8996:
-		fg_reset_on_lockup = 1;
 		rc = fg_8996_hw_init(chip);
 		/* Setup workaround flag based on PMIC type */
 		if (fg_sense_type == INTERNAL_CURRENT_SENSE)
@@ -8713,9 +8694,6 @@ static int fg_detect_pmic_type(struct fg_chip *chip)
 				pmic_rev_id->pmic_subtype);
 		return -EINVAL;
 	}
-
-	if (PMI8996 == pmic_rev_id->pmic_subtype)
-		fg_reset_on_lockup = 1;
 
 	return 0;
 }
